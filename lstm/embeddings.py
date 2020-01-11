@@ -5,17 +5,19 @@ import zipfile
 import torch
 
 class EmbeddedVocab():
-  def __init__(self, embeddings_path, embedding_size, download=False, logdir='/logs'):
+  def __init__(self, embeddings_path: str, embedding_size: int, download: bool, logdir: str):
     self.embedding_size = embedding_size
     self.embeddings_path = embeddings_path
     
-    if download:
-      print("Downloading pretrained Glove embeddings from: http://nlp.stanford.edu/data/glove.6B.zip")
+    if download:s
+      os.mkdir(logdir)
+      print("\nDownloading pretrained Glove embeddings from: http://nlp.stanford.edu/data/glove.6B.zip to: "+logdir)
       url = 'http://nlp.stanford.edu/data/glove.6B.zip'
-      wget.download(url, os.getcwd()+logdir)
-      with zipfile.ZipFile(os.getcwd()+logdir, 'r') as zip_ref:
-        zip_ref.extractall(os.getcwd()+logdir)
-      self.embeddings_path = os.getcwd()+logdir+filename
+
+      wget.download(url, logdir)
+      with zipfile.ZipFile(logdir+'glove.6B.zip', 'r') as zip_ref:
+        zip_ref.extractall(logdir)
+      self.embeddings_path = logdir + 'glove.6B.100d.txt'
       
     
     
@@ -38,7 +40,7 @@ class EmbeddedVocab():
       reverse_vocab[word] = i
       i+=1
     f.close()
-    print(f'Vocab initialized with {len(embeddings)-1} words, with {self.embedding_size} embedding dimensions')
+    print(f'\nVocab initialized with {len(embeddings)-1} words, with {self.embedding_size} embedding dimensions')
     embeddings = torch.from_numpy(np.array(list(embeddings.values())))
     return(embeddings, vocab, reverse_vocab)
   

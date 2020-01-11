@@ -20,36 +20,41 @@ class ImportData:
 
 
 class QuoraQuestionDataset(Dataset):
-  def __init__(self, datasetvar: ImportData, use_pretrained_emb: bool=True, reverse_vocab: dict = None):
+  def __init__(self, datasetvar: ImportData, use_pretrained_emb: bool=False, reverse_vocab: dict = None, preprocess: bool = True, train: bool = True):
     self.use_cuda = torch.cuda.is_available()
     self.data = datasetvar.copy()
-    
-    if not use_pretrained_emb:
+
+    if preprocess == True:
+      self.preprocessing()  
+
+    if not use_pretrained_emb and train:
       unique_words = self.data.question1.str.split(' ').append(self.data.question2.str.split(' '))
       unique_words = pd.Series([i for j in unique_words.values for i in j]).unique().tolist()
       unique_words.insert(0, 'pad')
       self.unique_words = len(unique_words)
       self.reverse_vocab = dict(zip(unique_words, range(0,219673)))
+
     elif type(reverse_vocab) == dict:
       self.reverse_vocab = reverse_vocab
       self.unique_words = len(reverse_vocab.keys())
+
+
     else:
-      raise Exception("Invalid reverse_vocab arg")
+      raise Exception("Invalid reverse_vocab arg (cannot create dictionary with mapping of words to their indices).")
   
-  def preprocessing(self, cleaning: bool = True):
-    if cleaning:
-      self.data.question1 = self.data.question1.apply(lambda x: self.text_to_word_list(x))
-      self.data.question2 = self.data.question2.apply(lambda x: self.text_to_word_list(x))
+  def preprocessing(self, reverse_vocab):
+    self.data.question1 = self.data.question1.apply(lambda x: self.text_to_word_list(x))
+    self.data.question2 = self.data.question2.apply(lambda x: self.text_to_word_list(x))
     
-    
-    self.data.question1 = self.data.question1.apply(lambda x: list(map(lambda y: self.replace_words(y, self.reverse_vocab), x)))
-    self.data.question2 = self.data.question2.apply(lambda x: list(map(lambda y: self.replace_words(y, self.reverse_vocab), x)))
+  def words_to_ids(self):
+    self.data.question1 = self.data.question1.apply(lambda x: list(map(lambda y: self.replace_words(y, self.reverse_vocab), x.split())))
+    self.data.question2 = self.data.question2.apply(lambda x: list(map(lambda y: self.replace_words(y, self.reverse_vocab), x.split())))
       
     #self.data.is_duplicate = self.data.is_duplicate.apply(lambda x: np.array([x], dtype='int8'))
     
     
-  def text_to_word_list(self, text):
-    ''' Pre process and convert texts to a list of words 
+  def text_to_word_list(self, text: str):
+    ''' Pre process 
     method from: https://github.com/eliorc/Medium/blob/master/MaLSTM.ipynb'''
     text = str(text)
     text = text.lower()
@@ -85,13 +90,11 @@ class QuoraQuestionDataset(Dataset):
     text = sub(r"j k", "jk", text)
     text = sub(r"\s{2,}", " ", text)
 
-    text = text.split()
-
     return text  
    
   #def spell_checker(self, word):
   
-  def replace_words(self, word, reverse_vocab):
+  def replace_words(self, word: str, reverse_vocab: dict):
     if word in reverse_vocab.keys():
       return reverse_vocab[f'{word}']
     else:
