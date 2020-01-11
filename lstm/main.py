@@ -95,6 +95,7 @@ if __name__ == "__main__":
     print('Gradient clipping            :', args.gradient_clipping_norm)
     print('--------------------------------------\n')
     print('\nTraining Parameters:')
+    print('Device                       :', ' GPU' if torch.cuda.is_available() else ' CPU')
     print('Optimizer                    :' + ' Adam')
     print('Loss function                :' + ' MSE')
     print('Batch Size                   :', args.batch_size)
