@@ -1,3 +1,5 @@
+
+import torch
 import pandas as pd
 import numpy as np
 from re import sub
@@ -21,13 +23,13 @@ class ImportData:
 
 class QuoraQuestionDataset(Dataset):
   def __init__(self, datasetvar: ImportData, use_pretrained_emb: bool=False, reverse_vocab: dict = None, preprocess: bool = True, train: bool = True):
-    self.use_cuda = torch.cuda.is_available()
     self.data = datasetvar.copy()
-
+    self.type = 'train' if train==True else 'test'
     if preprocess == True:
       self.preprocessing()  
 
     if not use_pretrained_emb and train:
+      print('Initializing vocab with ids of all unique words present in training dataset...')
       unique_words = self.data.question1.str.split(' ').append(self.data.question2.str.split(' '))
       unique_words = pd.Series([i for j in unique_words.values for i in j]).unique().tolist()
       unique_words.insert(0, 'pad')
@@ -42,11 +44,13 @@ class QuoraQuestionDataset(Dataset):
     else:
       raise Exception("Invalid reverse_vocab arg (cannot create dictionary with mapping of words to their indices).")
   
-  def preprocessing(self, reverse_vocab):
+  def preprocessing(self):
+    print(f'Cleaning {self.type} dataset...')
     self.data.question1 = self.data.question1.apply(lambda x: self.text_to_word_list(x))
     self.data.question2 = self.data.question2.apply(lambda x: self.text_to_word_list(x))
     
   def words_to_ids(self):
+    print(f'Replacing all words in {self.type} dataset with their ids...')
     self.data.question1 = self.data.question1.apply(lambda x: list(map(lambda y: self.replace_words(y, self.reverse_vocab), x.split())))
     self.data.question2 = self.data.question2.apply(lambda x: list(map(lambda y: self.replace_words(y, self.reverse_vocab), x.split())))
       

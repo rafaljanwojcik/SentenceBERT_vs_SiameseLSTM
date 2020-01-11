@@ -9,15 +9,22 @@ class EmbeddedVocab():
     self.embedding_size = embedding_size
     self.embeddings_path = embeddings_path
     
-    if download:s
-      os.mkdir(logdir)
-      print("\nDownloading pretrained Glove embeddings from: http://nlp.stanford.edu/data/glove.6B.zip to: "+logdir)
-      url = 'http://nlp.stanford.edu/data/glove.6B.zip'
+    if download:
+      path = logdir+'embeddings/'
+      if not os.path.exists(path): 
+        os.chdir(logdir)
+        os.mkdir('embeddings')
+        os.chdir('..')
 
-      wget.download(url, logdir)
-      with zipfile.ZipFile(logdir+'glove.6B.zip', 'r') as zip_ref:
-        zip_ref.extractall(logdir)
-      self.embeddings_path = logdir + 'glove.6B.100d.txt'
+      print("\nDownloading pretrained Glove embeddings from: http://nlp.stanford.edu/data/glove.6B.zip to: "+path)
+      url = 'http://nlp.stanford.edu/data/glove.6B.zip'
+      wget.download(url, path)
+
+      print('\nExtracting embeddings...')
+      with zipfile.ZipFile(path+'glove.6B.zip', 'r') as zip_ref:
+        zip_ref.extractall(path)
+        print('\nExtracted.')
+      self.embeddings_path = path + 'glove.6B.100d.txt'
       
     
     
@@ -25,6 +32,7 @@ class EmbeddedVocab():
     
         
   def initiate_vocab_and_embeddings(self):
+    print('\n Initializing embeddings vocab...')
     f = open(self.embeddings_path)
     #embeddings = np.zeros((len(f),self.embedding_size))
     embeddings = {0:np.array([0]*self.embedding_size)}
@@ -40,7 +48,7 @@ class EmbeddedVocab():
       reverse_vocab[word] = i
       i+=1
     f.close()
-    print(f'\nVocab initialized with {len(embeddings)-1} words, with {self.embedding_size} embedding dimensions')
+    print(f'\nEmbeddings initialized with {len(embeddings)-1} words, with {self.embedding_size} embedding dimensions')
     embeddings = torch.from_numpy(np.array(list(embeddings.values())))
     return(embeddings, vocab, reverse_vocab)
   

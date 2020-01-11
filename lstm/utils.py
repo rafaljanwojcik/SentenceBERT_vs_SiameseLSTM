@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from torch.nn.utils.rnn import pad_sequence
 
 def generate_batch(batch):
@@ -12,7 +13,7 @@ def generate_batch(batch):
 	return [torch.stack([sentences1, sentences2]), torch.tensor(labels)]
 
 
-def train(model, optimizer, criterion, train_dataloader, device):
+def train(model, optimizer, criterion, train_dataloader, device, epoch_loss, preds_train, gradient_clipping_norm, epoch):
 	epoch_iteration = 0
 	model.train()   
 	for batch in train_dataloader:
@@ -37,7 +38,7 @@ def train(model, optimizer, criterion, train_dataloader, device):
 		  print(f'Mean loss till {epoch_iteration}th iteration of epoch {epoch}: ', np.mean(epoch_loss))
 
 
-def eval(model, criterion, test_dataloader, device):
+def eval(model, criterion, test_dataloader, device,  eval_loss, preds_test):
 	model.eval()
 	for batch in test_dataloader:
 		with torch.no_grad():
