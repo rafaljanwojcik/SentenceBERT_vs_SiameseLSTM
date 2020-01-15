@@ -11,8 +11,8 @@ class MaLSTM(nn.Module):
       super(MaLSTM, self).__init__()
       self.init_range=0.1
       if use_pretrained:
-        self.embedding = nn.Embedding.from_pretrained(embeddings, freeze=not train_embeddings)
-        self.embedding.weight = nn.Parameter(embeddings)
+        self.embedding = nn.Embedding.from_pretrained(pretrained_embeddings.embeddings, freeze=not train_embeddings)
+        self.embedding.weight = nn.Parameter(pretrained_embeddings.embeddings)
         self.embedding.weight.requires_grad = train_embeddings
       else:
         self.embedding = nn.Embedding(n_token, embedding_dim, padding_idx=0)

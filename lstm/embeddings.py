@@ -10,7 +10,7 @@ class EmbeddedVocab():
     self.embeddings_path = embeddings_path
     
     if download:
-      path = logdir+'embeddings/'
+      path = logdir+'/embeddings/'
       if not os.path.exists(path): 
         os.chdir(logdir)
         os.mkdir('embeddings')
