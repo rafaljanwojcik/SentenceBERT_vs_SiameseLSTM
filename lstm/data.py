@@ -34,7 +34,7 @@ class QuoraQuestionDataset(Dataset):
       unique_words = pd.Series([i for j in unique_words.values for i in j]).unique().tolist()
       unique_words.insert(0, 'pad')
       self.unique_words = len(unique_words)
-      self.reverse_vocab = dict(zip(unique_words, range(0,219673)))
+      self.reverse_vocab = dict(zip(unique_words, range(0,self.unique_words)))
 
     elif type(reverse_vocab) == dict:
       self.reverse_vocab = reverse_vocab

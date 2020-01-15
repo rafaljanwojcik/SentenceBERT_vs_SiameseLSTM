@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-log", "--logdir", type=str, help="Directory to save all downloaded files, and model checkpoints.", default=os.getcwd()+'/logs')  
-    parser.add_argument("-df", "--data_file", type=str, help="Path to dataset.", default=os.getcwd()+"/train.csv")
+    parser.add_argument("-df", "--data_file", type=str, help="Path to dataset.", default=os.getcwd()+"/logs/dataset.csv")
     parser.add_argument("-pr", "--use_pretrained", type=bool, help="Boolean, whether use pretrained embeddings.", default=False)
     parser.add_argument("-dwl", "--download_emb", type=bool, help="Bool, whether to download embeddings or not (default is to download 100dimensional Glove embeddings)", default=True)
     parser.add_argument("-dim", "--emb_dim", type=int, help="Dimensions of pretrained embeddings", default=100)
