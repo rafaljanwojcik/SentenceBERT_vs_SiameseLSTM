@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import BertModel, BertTokenizer
+from transformers import BertForSequenceClassification
 
 from .embeddings import EmbeddedVocab
 
@@ -61,6 +62,28 @@ class SiameseBERT(nn.Module):
         outputs2 = self.encoder(encoded2['input_ids'], encoded2['token_type_ids'], encoded2['attention_mask'])
         
         return self.metric(outputs1[0][:, 0, :], outputs2[0][:, 0, :])
+    
+class SiameseBERT2(BertForSequenceClassification):
+    def __init__(self, *args, **kwargs):
+        super(SiameseBERT, self).__init__(*args, **kwargs)
+        self.metric = nn.CosineSimilarity(dim=1, eps=1e-6)
+        
+    def forward(self, **kwargs):
+        inputs = {**kwargs}
+        inputs1 = {k: v for k, v in inputs.items() if '_2' not in k}
+        inputs2 = {k: v for k, v in inputs.items() if '_2' in k}
+        inputs2 = {k.split('_2')[0]: v for k, v in inputs.items() if '_2' in k}
+        
+        outputs1 = self.bert(**inputs1)
+        outputs2 = self.bert(**inputs2)
+
+        pooled_output = outputs[1]
+        
+        loss_fct = nn.MSELoss()
+        loss = loss_fct(self.metric(outputs1[0][:, 0, :], outputs2[0][:, 0, :]))
+        
+        outputs = (loss,) + ['_tmp']
+        return outputs  # (loss), logits, (hidden_states), (attentions)
     
 class ClassifierBERT(nn.Module):
     def __init__(self, bert_type: str, device: torch.device):
