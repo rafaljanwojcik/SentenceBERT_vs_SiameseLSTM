@@ -4,6 +4,7 @@ from torch.nn.utils.rnn import pad_sequence
 import sys
 import logging
 from tqdm.notebook import tqdm
+from datasets import load_dataset
 
 from .models import SiameseBERT, ClassifierBERT
 
@@ -141,3 +142,12 @@ def eval_bert(model, criterion, test_dataloader, device,  eval_loss, preds_test)
                 preds_test.append(((y_hat>=0.5).float()==y_batch).sum().item())
             else:
                 raise ValueError('Invalid model instance for train_bert function!')
+                
+def get_quora_huggingface(export_dir_file: str) -> None:
+    dataset = load_dataset('quora')
+    dataset['train'].set_format('pandas')
+    dataset_pd = dataset['train'][:]
+    dataset_pd['question1'] = dataset_pd.questions.apply(lambda x: x['text'][0])
+    dataset_pd['question2'] = dataset_pd.questions.apply(lambda x: x['text'][1])
+    dataset_pd.is_duplicate = dataset_pd.is_duplicate.astype('int8')
+    dataset_pd[['question1', 'question2', 'is_duplicate']].to_csv(export_dir, index=False)

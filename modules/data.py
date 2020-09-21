@@ -10,7 +10,7 @@ from typing import Union
 class ImportData:
     def __init__(self, dataset: Union[str, pd.DataFrame]):
         if isinstance(dataset, str):
-            self.data = pd.read_csv(dataset).dropna()[['question1', 'question2', 'is_duplicate']]
+            self.data = pd.read_csv(dataset).dropna().copy()[['question1', 'question2', 'is_duplicate']]
         elif isinstance(dataset, pd.DataFrame):
             self.data = dataset
         else:
