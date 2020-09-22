@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import numpy as np
 import os
 from pathlib import Path
@@ -84,6 +85,8 @@ def compute_metrics(pred):
         'recall': recall
     }
 
+def count_parameters(model: nn.Module) -> int:
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 def train(model, optimizer, criterion, train_dataloader, device, epoch_loss, preds_train, gradient_clipping_norm, epoch, logger):
     model.train()   
