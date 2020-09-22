@@ -65,7 +65,7 @@ class SiameseBERT(nn.Module):
     
 class SiameseBERT2(BertForSequenceClassification):
     def __init__(self, *args, **kwargs):
-        super(SiameseBERT, self).__init__(*args, **kwargs)
+        super(SiameseBERT2, self).__init__(*args, **kwargs)
         self.metric = nn.CosineSimilarity(dim=1, eps=1e-6)
         
     def forward(self, **kwargs):
