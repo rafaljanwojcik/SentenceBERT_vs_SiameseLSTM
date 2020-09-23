@@ -5,6 +5,7 @@ from typing import Dict, Union, Any, Optional, Tuple
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+import numpy as np
 
 from transformers import Trainer
 from transformers.tokenization_utils_base import BatchEncoding
