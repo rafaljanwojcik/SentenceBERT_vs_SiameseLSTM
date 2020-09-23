@@ -70,19 +70,18 @@ class SiameseBERT2(BertForSequenceClassification):
         
     def forward(self, **kwargs):
         inputs = {**kwargs}
-        inputs1 = {k: v for k, v in inputs.items() if '_2' not in k}
-        inputs2 = {k: v for k, v in inputs.items() if '_2' in k}
-        inputs2 = {k.split('_2')[0]: v for k, v in inputs.items() if '_2' in k}
+        # inputs1 = {k: v for k, v in inputs.items() if '_2' not in k}
+        # inputs2 = {k: v for k, v in inputs.items() if '_2' in k}
+        # inputs2 = {k.split('_2')[0]: v for k, v in inputs.items() if '_2' in k}
         
-        outputs1 = self.bert(**inputs1)
-        outputs2 = self.bert(**inputs2)
-
-        pooled_output = outputs[1]
+        outputs1 = self.bert(**inputs['sent1'])
+        outputs2 = self.bert(**inputs['sent2'])
         
         loss_fct = nn.MSELoss()
-        loss = loss_fct(self.metric(outputs1[0][:, 0, :], outputs2[0][:, 0, :]))
+        logits = self.metric(outputs1[0][:, 0, :], outputs2[0][:, 0, :])
+        loss = loss_fct(logits, inputs['labels'])
         
-        outputs = (loss,) + ['_tmp']
+        outputs = (loss, logits)
         return outputs  # (loss), logits, (hidden_states), (attentions)
     
 class ClassifierBERT(nn.Module):

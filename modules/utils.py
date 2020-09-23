@@ -54,8 +54,9 @@ def collate_fn_bert(batch, tokenizer, bert_type):
     elif bert_type == 'siamese':
         out1 = tokenizer(sent1, padding=True, truncation=True, return_tensors="pt")
         out2 = tokenizer(sent2, padding=True, truncation=True, return_tensors="pt")
-        out2 = {f'{k}_tmp': v for k, v in out2.items()}
-        out = {**out1, **out2}
+        out = {'sent1':out1, 'sent2':out2, 'labels':target}
+        # out2 = {f'{k}_tmp': v for k, v in out2.items()}
+        # out = {**out1, **out2}
     else:
         raise ValueError("Incorrect bert type: should be 'siamese' or 'classifier'")
     return out
@@ -76,6 +77,18 @@ def get_quora_huggingface(export_path: Path) -> None:
 def compute_metrics(pred):
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
+    acc = accuracy_score(labels, preds)
+    return {
+        'accuracy': acc,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall
+    }
+
+def compute_metrics_siamBERT(pred):
+    labels = pred.label_ids
+    preds = pred.predictions>0.5
     precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
     acc = accuracy_score(labels, preds)
     return {
