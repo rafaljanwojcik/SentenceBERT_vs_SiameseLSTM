@@ -1,12 +1,16 @@
 import torch
 import torch.nn as nn
 from typing import Dict, Union, Any, Optional, Tuple
-from transformers.tokenization_utils_base import BatchEncoding
+
 from torch.utils.data import DataLoader
-from transformers.trainer_utils import PredictionOutput
+
+from transformers import Trainer
+from transformers.tokenization_utils_base import BatchEncoding
+from transformers.trainer_utils import PredictionOutput, EvalPrediction
 from transformers.file_utils import cached_property, is_torch_available, is_torch_tpu_available
+
 from tqdm.auto import tqdm, trange
-from transformers.trainer_utils import EvalPrediction
+
 
 class CustomTrainer(Trainer):
     def __init__(self, *args, **kwargs):
