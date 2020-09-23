@@ -1,7 +1,9 @@
-import torch
-import torch.nn as nn
+from tqdm.auto import tqdm, trange
+from logging import Logger
 from typing import Dict, Union, Any, Optional, Tuple
 
+import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from transformers import Trainer
@@ -9,12 +11,11 @@ from transformers.tokenization_utils_base import BatchEncoding
 from transformers.trainer_utils import PredictionOutput, EvalPrediction
 from transformers.file_utils import cached_property, is_torch_available, is_torch_tpu_available
 
-from tqdm.auto import tqdm, trange
-
 
 class CustomTrainer(Trainer):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, logger: Logger, *args, **kwargs):
         super(CustomTrainer,self).__init__(*args, **kwargs)
+        self.logger = logger
 
     def _prepare_inputs(self, inputs: Dict[str, Union[torch.Tensor, Any]]) -> Dict[str, Union[torch.Tensor, Any]]:
         """
@@ -60,9 +61,9 @@ class CustomTrainer(Trainer):
         # inside a DistributedDataParallel as we'll be under `no_grad` anyways.
 
         batch_size = dataloader.batch_size
-        logger.info("***** Running %s *****", description)
-        logger.info("  Num examples = %d", self.num_examples(dataloader))
-        logger.info("  Batch size = %d", batch_size)
+        self.logger.info("***** Running %s *****", description)
+        self.logger.info("  Num examples = %d", self.num_examples(dataloader))
+        self.logger.info("  Batch size = %d", batch_size)
         eval_losses: List[float] = []
         preds: torch.Tensor = None
         label_ids: torch.Tensor = None
