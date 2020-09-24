@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import logging
+import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
@@ -10,23 +11,23 @@ from datetime import date
 import argparse
 import matplotlib.pyplot as plt
 
-from modules.data.data import ImportData, QuoraQuestionDataset
-from modules.models.embeddings import EmbeddedVocab
-from modules.models.models import SiameseLSTM
-from modules.utils.utils import collate_fn_lstm, train, eval, setup_logger
+from modules.data import ImportData, QuoraQuestionDataset
+from modules.embeddings import EmbeddedVocab
+from modules.models import SiameseLSTM
+from modules.utils import collate_fn_lstm, train, eval, setup_logger, count_parameters, compute_metrics_siamLSTM
 
 
 today = str(date.today())
 path = Path(f'./logs/train_job_{today}/')
-emb_path = Path('./logs/embeddings')
+emb_path = Path('./logs/')
 data_path = Path('./logs/data')
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-model", "--model_name", type=str, help="Name of trained model. Needed only for correct logs output", default='siam_lstm')  
     parser.add_argument("-log", "--logdir", type=str, help="Directory to save all downloaded files, and model checkpoints.", default=path)  
     parser.add_argument("-df", "--data_file", type=str, help="Path to dataset.", default=data_path/"dataset.csv")
     parser.add_argument("-pr", "--use_pretrained", action='store_true', help="Boolean, whether use pretrained embeddings.", default=True)
-    parser.add_argument("-nodwl", "--download_emb",  action='store_true', help="Bool, whether to download embeddings or not (default is to download 100 dimensional Glove embeddings)", default=False)
     parser.add_argument("-dim", "--emb_dim", type=int, help="Dimensions of pretrained embeddings", default=100)
     parser.add_argument("-empth", "--emb_path", type=str, help="path to file with pretrained embeddings", default=emb_path)
     parser.add_argument("-s", "--split_seed", type=int, help="Seed for splitting the dataset.", default=44)
@@ -38,8 +39,8 @@ if __name__=='__main__':
     parser.add_argument("-gc", "--gradient_clipping_norm", type=float, help="Gradient clipping norm", default=1.25)
     parser.add_argument("-note", "--train_embeddings", action='store_false', help="Whether to fine-tune embedding weights during training", default=True)
 
-    args = parser.parse_args()
-    args.logdir = args.logdir/args.model_name
+    args = parser.parse_args('')
+    args.logdir = args.logdir/f'{args.model_name}_{args.emb_dim}dglove'
     model_path = args.logdir/'best_model/'
     if not args.logdir.exists():
         os.makedirs(args.logdir)
@@ -49,7 +50,7 @@ if __name__=='__main__':
 
     if args.use_pretrained:
         logger.info('Building Embedding Matrix...')
-        embedded_vocab_class = EmbeddedVocab(args.emb_path/'glove.6B.100d.txt', args.emb_dim, args.download_emb, args.emb_path, logger)
+        embedded_vocab_class = EmbeddedVocab(args.emb_path/'glove.6B.100d.txt', args.emb_dim, args.emb_path, logger)
     else:
         embedded_vocab_class = None
 
@@ -110,13 +111,14 @@ if __name__=='__main__':
     logger.info('Loss function                :{}'.format(' MSE'))
     logger.info('Batch Size                   :{}'.format(args.batch_size))
     logger.info('Number of Epochs             :{}'.format(args.n_epoch))
+    logger.info("Parameters count             :{}".format(count_parameters(model)))
     logger.info('--------------------------------------')
 
     start = time()
     all_train_losses = []
     all_test_losses = []
-    train_accuracies = []
-    test_accuracies = []
+    all_train_metrics = []
+    all_test_metrics = []
     best_acc = 0.5
     logger.info("Training the model...")
     for epoch in range(n_epoch):
@@ -124,19 +126,24 @@ if __name__=='__main__':
         epoch_iteration = 0
         epoch_loss=[]
         preds_train = []
+        labels_train = []
+        labels_test = []
 
-        train(model, optimizer, criterion, train_dataloader, device, epoch_loss, preds_train, args.gradient_clipping_norm, epoch, logger)
+        train(model, optimizer, criterion, train_dataloader, device, epoch_loss, preds_train, labels_train, args.gradient_clipping_norm, epoch, logger)
 
         eval_loss = []
         preds_test = []
-        eval(model, criterion, test_dataloader, device, eval_loss, preds_test)
+        eval(model, criterion, test_dataloader, device, eval_loss, preds_test, labels_test)
 
         train_loss = np.mean(epoch_loss)
-        train_accuracy = np.sum(preds_train)/data.train.shape[0]
+        train_metrics = compute_metrics_siamLSTM(np.concatenate(preds_train), np.concatenate(labels_train))#np.sum(preds_train)/data.train.shape[0]
+        train_metrics = pd.DataFrame(train_metrics.values(), index = train_metrics.keys(), columns=['train']).T
         test_loss = np.mean(eval_loss)
-        test_accuracy = np.sum(preds_test)/data.test.shape[0]
+        test_metrics = compute_metrics_siamLSTM(np.concatenate(preds_test), np.concatenate(labels_test))#np.sum(preds_test)/data.test.shape[0]
+        test_metrics = pd.DataFrame(test_metrics.values(), index = test_metrics.keys(), columns=['test']).T
+        stats_df = train_metrics.append(test_metrics)
 
-        if test_accuracy>best_acc:
+        if test_metrics['accuracy'][0]>best_acc:
             if not model_path.exists():
                 os.mkdir(model_path)
             logger.info('Saving best model at: {}'.format(str(model_path/'checkpoint.pth')))
@@ -145,36 +152,49 @@ if __name__=='__main__':
                 'model_state_dict': model.module.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'test_loss': test_loss,
-                'test_accuracy':test_accuracy
+                'test_accuracy':test_metrics['accuracy'][0],
+                'test_fscore':test_metrics['f1'][0]
                 }, str(model_path/'checkpoint.pth'))
 
         all_train_losses.append(train_loss)
         all_test_losses.append(test_loss)
-        train_accuracies.append(train_accuracy)
-        test_accuracies.append(test_accuracy)
+        all_train_metrics.append(train_metrics)
+        all_test_metrics.append(test_metrics)
 
-        logger.info('Mean loss and accuracy of epoch {} - train: {}, {}, test: {}, {}. Calculation time: {} hours'.format(epoch, train_loss, round(train_accuracy, 4), test_loss, round(test_accuracy, 4), (time() - epoch_time)/3600))
+        logger.info('Mean loss of epoch {} - train: {}, test: {}. Calculation time: {} hours'.format(epoch, train_loss, test_loss, (time() - epoch_time)/3600))
+        logger.info('Detailed stats of epoch {}:\n{}\n'.format(epoch, stats_df.to_string()))
+        logger.info('')
 
-    logger.info("Model training finished in: {}".format(np.round((time()-start)/60, 3)))
+    all_train_metrics = pd.concat(all_train_metrics).reset_index(drop=True)
+    all_test_metrics = pd.concat(all_test_metrics).reset_index(drop=True)
+    all_train_metrics['epoch'] = [i for i in range(1, len(all_train_metrics)+1)]
+    all_test_metrics['epoch'] = [i for i in range(1, len(all_test_metrics)+1)]
+
+    all_losses = pd.DataFrame(zip(all_train_losses, all_test_losses), columns=['train_loss', 'test_loss'])
+    all_losses['epoch'] = [i for i in range(1, len(all_losses)+1)]
 
     plt.figure(figsize=(10,6))
-    plt.title(f'Train and test losses during training of {args.model_name} model')
+    plt.title(f'Train and test losses during training of {args.model_name} model, glove dimensions: {args.emb_dim}')
     plt.plot(list(range(len(all_train_losses))), all_train_losses, label='train')
     plt.plot(list(range(len(all_test_losses))), all_test_losses, label='test')
     plt.legend()
     plt.grid(alpha=0.5)
     plt.xlabel('epoch')
     plt.ylabel('loss')
-    plt.savefig(args.logdir/'loss_plots.png')
+    plt.savefig(args.logdir/f'loss_plots_{args.model_name}_glove{args.emb_dim}.png')
     plt.show()
 
     plt.figure(figsize=(10,6))
-    plt.title(f'Train and test losses during training of {args.model_name} model')
-    plt.plot(list(range(len(train_accuracies))), train_accuracies, label='train')
-    plt.plot(list(range(len(test_accuracies))), test_accuracies, label='test')
+    plt.title(f'Train and test accuracies during training of {args.model_name} model, glove dimensions: {args.emb_dim}')
+    plt.plot(list(range(len(all_train_metrics.accuracy))), all_train_metrics.accuracy, label='train')
+    plt.plot(list(range(len(all_test_metrics.accuracy))), all_test_metrics.accuracy, label='test')
     plt.legend()
     plt.grid(alpha=0.5)
     plt.xlabel('epoch')
     plt.ylabel('accuracy')
-    plt.savefig(args.logdir/'acc_plots.png')
+    plt.savefig(args.logdir/f'acc_plots_{args.model_name}_glove{args.emb_dim}.png')
     plt.show()
+
+    all_train_metrics.reset_index(drop=True).to_csv(args.logdir/f'{args.model_name}_{args.emb_dim}dglove_train_metrics.csv', sep=',', index=False)
+    all_test_metrics.reset_index(drop=True).to_csv(args.logdir/f'{args.model_name}_{args.emb_dim}dglove_test_metrics.csv', sep=',', index=False)
+    all_losses.to_csv(args.logdir/f'{args.model_name}_{args.emb_dim}dglove_train_losses.csv', sep=',', index=False)

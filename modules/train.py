@@ -157,9 +157,13 @@ class CustomTrainer(Trainer):
         inputs = self._prepare_inputs(inputs)
 
         with torch.no_grad():
-            outputs = model(**inputs)
+            outputs1 = model(**inputs['sent1'])
+            outputs2 = model(**inputs['sent2'])
+            loss_fct = nn.MSELoss()
+            metric = nn.CosineSimilarity(dim=1, eps=1e-6)
             if has_labels:
-                loss, logits = outputs[:2]
+                logits = metric(outputs1, outputs2)
+                loss = loss_fct(logits, inputs['labels'])
                 loss = loss.mean().item()
             else:
                 loss = None
@@ -174,4 +178,22 @@ class CustomTrainer(Trainer):
         if labels is not None:
             labels = labels.detach()
         return (loss, logits, labels)
+    
+    def compute_loss(self, model, inputs):
+        """
+        How the loss is computed by Trainer. By default, all models return the loss in the first element.
+
+        Subclass and override for custom behavior.
+        """
+        outputs1 = model(**inputs['sent1'])
+        outputs2 = model(**inputs['sent2'])
+        loss_fct = nn.MSELoss()
+        metric = nn.CosineSimilarity(dim=1, eps=1e-6)
+        logits = metric(outputs1, outputs2)
+        loss = loss_fct(logits, inputs['labels'])
         
+        # Save past state if it exists
+        if self.args.past_index >= 0:
+            self._past = outputs[self.args.past_index]
+        # We don't use .loss here since the model may return tuples instead of ModelOutput.
+        return loss

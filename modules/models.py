@@ -63,41 +63,12 @@ class SiameseBERT(nn.Module):
         
         return self.metric(outputs1[0][:, 0, :], outputs2[0][:, 0, :])
     
+from transformers import BertForSequenceClassification
 class SiameseBERT2(BertForSequenceClassification):
     def __init__(self, *args, **kwargs):
         super(SiameseBERT2, self).__init__(*args, **kwargs)
         self.metric = nn.CosineSimilarity(dim=1, eps=1e-6)
         
     def forward(self, **kwargs):
-        inputs = {**kwargs}
-        # inputs1 = {k: v for k, v in inputs.items() if '_2' not in k}
-        # inputs2 = {k: v for k, v in inputs.items() if '_2' in k}
-        # inputs2 = {k.split('_2')[0]: v for k, v in inputs.items() if '_2' in k}
-        
-        outputs1 = self.bert(**inputs['sent1'])
-        outputs2 = self.bert(**inputs['sent2'])
-        
-        loss_fct = nn.MSELoss()
-        logits = self.metric(outputs1[0][:, 0, :], outputs2[0][:, 0, :])
-        loss = loss_fct(logits, inputs['labels'])
-        
-        outputs = (loss, logits)
-        return outputs  # (loss), logits, (hidden_states), (attentions)
-    
-class ClassifierBERT(nn.Module):
-    def __init__(self, bert_type: str, device: torch.device):
-        super(ClassifierBERT, self).__init__()
-        self.name = 'class_bert'
-        self.encoder = BertModel.from_pretrained(bert_type)
-        self.tokenizer = BertTokenizer.from_pretrained(bert_type)
-        self.device = device
-        self.dropout = nn.Dropout(0.3)
-        self.linear = nn.Linear(in_features = 768, out_features=2)
-
-    def forward(self, inputs):
-        encoded = self.tokenizer(inputs[0], inputs[1], padding=True, truncation=True, return_tensors="pt")
-        encoded = encoded.to(self.device)
-        outputs = self.encoder(encoded['input_ids'], encoded['token_type_ids'], encoded['attention_mask'])
-        cls_embedding = outputs[0][:, 0, :]
-        out = self.linear(self.dropout(cls_embedding))
-        return out
+        outputs = self.bert(**kwargs)
+        return outputs[0][:, 0, :]  # (loss), logits, (hidden_states), (attentions)
