@@ -1,4 +1,4 @@
-# Sentence BERT vs Siamese LSTM
+# BERT models vs Siamese LSTM
 
 ### Code repository for Masters Thesis titled:
 
@@ -13,6 +13,8 @@ Assessing similarity between sentences is an important task in advancements on h
 """
 
 Whole project have been written in PyTorch from scratch, and with use of HuggingFace Transformers. Idea for siameseBERT came from https://arxiv.org/abs/1908.10084.
+
+Link to thesis: ....
 
 All results from BERT models training are available in project:
 - https://wandb.ai/ra-v/bert_vs_siameselstm_quora
