@@ -15,8 +15,7 @@ Assessing similarity between sentences is an important task in advancements on h
 Whole project have been written in PyTorch from scratch, and with use of HuggingFace Transformers. Idea for siameseBERT came from https://arxiv.org/abs/1908.10084.
 
 All results from BERT models training are available in project:
-- https://wandb.ai/ra-v/bert_vs_siameselstm_quora/runs/1se2yqps/overview
-- https://wandb.ai/ra-v/bert_vs_siameselstm_quora/runs/23kb1k3a/overview
+- https://wandb.ai/ra-v/bert_vs_siameselstm_quora
 
 to install all nessecary packages, assuming you have basic conda configuration installed on your machine, run:
 - pip3 install -r requirements.txt
