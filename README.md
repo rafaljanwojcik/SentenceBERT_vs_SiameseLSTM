@@ -12,7 +12,7 @@ Assessing similarity between sentences is an important task in advancements on h
 
 """
 
-Whole project have been written in PyTorch from scratch, or with use of HuggingFace Transformers. Idea for siameseBERT came from https://arxiv.org/abs/1908.10084.
+Whole project have been written in PyTorch from scratch, and with use of HuggingFace Transformers. Idea for siameseBERT came from https://arxiv.org/abs/1908.10084.
 
 All results from BERT models training are available in project:
 - https://wandb.ai/ra-v/bert_vs_siameselstm_quora/runs/1se2yqps/overview
