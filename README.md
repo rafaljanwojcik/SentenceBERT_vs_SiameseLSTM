@@ -2,7 +2,7 @@
 
 ### Code repository for Masters Thesis titled:
 
-'Transformer Models and their suitability on Semantic Similarity downstream task'
+<b>'Transformer Models and their suitability on Semantic Similarity downstream task'</b>
 
 Summary from thesis:
 
