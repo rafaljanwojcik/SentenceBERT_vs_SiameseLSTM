@@ -17,4 +17,5 @@ https://wandb.ai/ra-v/bert_vs_siameselstm_quora/runs/1se2yqps/overview
 https://wandb.ai/ra-v/bert_vs_siameselstm_quora/runs/23kb1k3a/overview
 
 to install all nessecary packages, assuming you have basic conda configuration installed on your machine, run:
+
 pip3 install -r requirements.txt
